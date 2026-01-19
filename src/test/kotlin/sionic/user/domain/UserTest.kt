@@ -109,12 +109,13 @@ class UserTest {
         }
 
         private fun createUserWithId(id: Long): User {
-            // 테스트용 리플렉션으로 ID 설정
+            // 테스트용 리플렉션으로 ID 설정 - MEMBER 역할로 명시적 생성
             val user = User.create(
                 email = Email("test$id@example.com"),
                 rawPassword = "password123",
                 name = "테스트$id",
-                encoder = encoder
+                encoder = encoder,
+                role = Role.MEMBER // MVP에서는 기본이 ADMIN이므로 테스트에서 명시적으로 MEMBER 지정
             )
             val idField = User::class.java.getDeclaredField("id")
             idField.isAccessible = true

@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: test
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+jwt:
+  secret: test-secret-key-for-jwt-authentication-minimum-256-bits-required
+  expiration: 86400000
+
+openai:
+  api-key: test-api-key
+  base-url: https://api.openai.com/v1

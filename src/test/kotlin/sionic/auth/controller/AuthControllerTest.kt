@@ -45,7 +45,7 @@ class AuthControllerTest : IntegrationTestBase() {
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.email").value("test@example.com"))
                 .andExpect(jsonPath("$.name").value("테스트"))
-                .andExpect(jsonPath("$.role").value("MEMBER"))
+                .andExpect(jsonPath("$.role").value("ADMIN"))
         }
 
         @Test
