@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: sionic-ai
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sionic
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  h2:
+    console:
+      enabled: false
+
+jwt:
+  secret: sionic-ai-secret-key-for-jwt-token-generation-minimum-256-bits
+  expiration: 86400000 # 24 hours in milliseconds
+
+logging:
+  level:
+    root: INFO
+    sionic: DEBUG
+    org.hibernate.SQL: DEBUG
+
+openai:
+  api-key: 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
+  base-url: https://api.openai.com/v1
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:tc:postgresql:15:///testdb
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

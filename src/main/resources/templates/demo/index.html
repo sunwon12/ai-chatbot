@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot Service - 데모</title>
+    <link rel="stylesheet" th:href="@{/css/demo.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI Chatbot Service</h1>
+            <p class="subtitle">Sionic AI - MVP Demo</p>
+        </header>
+
+        <nav class="nav-cards">
+            <a th:href="@{/demo/login}" class="card">
+                <div class="card-icon">🔐</div>
+                <h2>회원가입 / 로그인</h2>
+                <p>새 계정 생성 및 로그인하여 JWT 토큰 발급</p>
+            </a>
+
+            <a th:href="@{/demo/chat}" class="card">
+                <div class="card-icon">💬</div>
+                <h2>AI 채팅</h2>
+                <p>OpenAI GPT와 대화하기</p>
+            </a>
+
+            <a th:href="@{/demo/admin}" class="card">
+                <div class="card-icon">📊</div>
+                <h2>관리자 대시보드</h2>
+                <p>통계, 피드백 관리, CSV 내보내기</p>
+            </a>
+
+            <a th:href="@{/swagger-ui.html}" class="card" target="_blank">
+                <div class="card-icon">📚</div>
+                <h2>API 문서 (Swagger)</h2>
+                <p>전체 API 스펙 확인</p>
+            </a>
+        </nav>
+
+        <section class="info-section">
+            <h3>📌 사용 방법</h3>
+            <ol>
+                <li><strong>회원가입/로그인</strong>에서 계정을 생성하고 로그인하세요.</li>
+                <li>발급받은 <strong>JWT 토큰</strong>이 자동으로 저장됩니다.</li>
+                <li><strong>AI 채팅</strong>에서 GPT-4o-mini와 대화해보세요.</li>
+                <li><strong>관리자 대시보드</strong>에서 통계와 피드백을 확인하세요.</li>
+            </ol>
+        </section>
+
+        <footer>
+            <p>© 2026 Sionic AI. MVP Demo for Client Presentation.</p>
+        </footer>
+    </div>
+</body>
+</html>

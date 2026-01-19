@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 / 로그인 - AI Chatbot</title>
+    <link rel="stylesheet" th:href="@{/css/demo.css}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <a th:href="@{/demo}" class="back-link">← 홈으로</a>
+            <h1>🔐 회원가입 / 로그인</h1>
+        </header>
+
+        <div class="two-columns">
+            <!-- 회원가입 -->
+            <section class="form-section">
+                <h2>회원가입</h2>
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="signupEmail">이메일</label>
+                        <input type="email" id="signupEmail" placeholder="example@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">비밀번호</label>
+                        <input type="password" id="signupPassword" placeholder="비밀번호" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupName">이름</label>
+                        <input type="text" id="signupName" placeholder="홍길동" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">회원가입</button>
+                </form>
+                <div id="signupResult" class="result-box"></div>
+            </section>
+
+            <!-- 로그인 -->
+            <section class="form-section">
+                <h2>로그인</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">이메일</label>
+                        <input type="email" id="loginEmail" placeholder="example@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">비밀번호</label>
+                        <input type="password" id="loginPassword" placeholder="비밀번호" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">로그인</button>
+                </form>
+                <div id="loginResult" class="result-box"></div>
+            </section>
+        </div>
+
+        <!-- 현재 토큰 상태 -->
+        <section class="token-section">
+            <h3>🔑 현재 저장된 토큰</h3>
+            <div id="currentToken" class="token-display">토큰 없음</div>
+            <button onclick="clearToken()" class="btn btn-danger">토큰 삭제</button>
+        </section>
+
+        <footer>
+            <p>MVP 단계: 모든 회원은 ADMIN 권한으로 가입됩니다.</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        // 페이지 로드 시 토큰 표시
+        document.addEventListener('DOMContentLoaded', () => {
+            displayToken();
+        });
+
+        // 토큰 표시
+        function displayToken() {
+            const token = localStorage.getItem('accessToken');
+            const tokenDisplay = document.getElementById('currentToken');
+            if (token) {
+                tokenDisplay.textContent = token.substring(0, 50) + '...';
+                tokenDisplay.classList.add('has-token');
+            } else {
+                tokenDisplay.textContent = '토큰 없음';
+                tokenDisplay.classList.remove('has-token');
+            }
+        }
+
+        // 토큰 삭제
+        function clearToken() {
+            localStorage.removeItem('accessToken');
+            displayToken();
+            alert('토큰이 삭제되었습니다.');
+        }
+
+        // 회원가입
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultBox = document.getElementById('signupResult');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('signupEmail').value,
+                        password: document.getElementById('signupPassword').value,
+                        name: document.getElementById('signupName').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultBox.innerHTML = `<div class="success">
+                        ✅ 회원가입 성공!<br>
+                        ID: ${data.id}<br>
+                        이메일: ${data.email}<br>
+                        이름: ${data.name}<br>
+                        역할: ${data.role}
+                    </div>`;
+                } else {
+                    resultBox.innerHTML = `<div class="error">❌ ${data.message || '회원가입 실패'}</div>`;
+                }
+            } catch (error) {
+                resultBox.innerHTML = `<div class="error">❌ 오류: ${error.message}</div>`;
+            }
+        });
+
+        // 로그인
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultBox = document.getElementById('loginResult');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('accessToken', data.accessToken);
+                    displayToken();
+                    resultBox.innerHTML = `<div class="success">
+                        ✅ 로그인 성공!<br>
+                        토큰이 저장되었습니다.
+                    </div>`;
+                } else {
+                    resultBox.innerHTML = `<div class="error">❌ ${data.message || '로그인 실패'}</div>`;
+                }
+            } catch (error) {
+                resultBox.innerHTML = `<div class="error">❌ 오류: ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+
+</html>

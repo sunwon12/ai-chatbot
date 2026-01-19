@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 채팅 - AI Chatbot</title>
+    <link rel="stylesheet" th:href="@{/css/demo.css}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <a th:href="@{/demo}" class="back-link">← 홈으로</a>
+            <h1>💬 AI 채팅</h1>
+            <p class="subtitle">GPT-4o-mini와 대화하기</p>
+        </header>
+
+        <!-- 토큰 상태 -->
+        <div id="tokenStatus" class="token-status"></div>
+
+        <!-- 채팅 영역 -->
+        <section class="chat-section">
+            <div id="chatMessages" class="chat-messages">
+                <div class="message system">
+                    안녕하세요! AI 챗봇입니다. 무엇이든 물어보세요.
+                </div>
+            </div>
+
+            <form id="chatForm" class="chat-form">
+                <input type="text" id="questionInput" placeholder="질문을 입력하세요..." required>
+                <select id="modelSelect">
+                    <option value="gpt-4o-mini">GPT-4o-mini (기본)</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5-turbo</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4">GPT-4</option>
+                </select>
+                <button type="submit" class="btn btn-primary" id="sendBtn">전송</button>
+            </form>
+        </section>
+
+        <!-- 대화 기록 -->
+        <section class="history-section">
+            <h3>📜 대화 기록 조회</h3>
+            <button onclick="loadChatHistory()" class="btn btn-secondary">대화 기록 불러오기</button>
+            <div id="historyResult" class="result-box"></div>
+        </section>
+
+        <!-- 피드백 -->
+        <section class="feedback-section">
+            <h3>👍 피드백 남기기</h3>
+            <div class="form-group">
+                <label for="chatIdInput">Chat ID</label>
+                <input type="number" id="chatIdInput" placeholder="피드백할 채팅 ID">
+            </div>
+            <div class="feedback-buttons">
+                <button onclick="submitFeedback(true)" class="btn btn-success">👍 좋아요</button>
+                <button onclick="submitFeedback(false)" class="btn btn-danger">👎 별로예요</button>
+            </div>
+            <div id="feedbackResult" class="result-box"></div>
+        </section>
+
+        <footer>
+            <p>30분 내 대화는 같은 스레드로 묶입니다.</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkToken();
+        });
+
+        function checkToken() {
+            const token = localStorage.getItem('accessToken');
+            const statusDiv = document.getElementById('tokenStatus');
+            if (token) {
+                statusDiv.innerHTML = '<span class="status-ok">✅ 로그인됨</span>';
+            } else {
+                statusDiv.innerHTML = '<span class="status-error">❌ 로그인 필요 - <a href="/demo/login">로그인하기</a></span>';
+            }
+        }
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem('accessToken');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // 채팅 전송
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            const messagesDiv = document.getElementById('chatMessages');
+            const sendBtn = document.getElementById('sendBtn');
+
+            // 사용자 메시지 추가
+            messagesDiv.innerHTML += `<div class="message user">${escapeHtml(question)}</div>`;
+            questionInput.value = '';
+            sendBtn.disabled = true;
+            sendBtn.textContent = '대기중...';
+
+            // AI 응답 대기 메시지
+            const loadingId = 'loading-' + Date.now();
+            messagesDiv.innerHTML += `<div class="message ai loading" id="${loadingId}">🤔 생각 중...</div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/chats`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        question: question,
+                        model: document.getElementById('modelSelect').value
+                    })
+                });
+
+                const loadingDiv = document.getElementById(loadingId);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    loadingDiv.classList.remove('loading');
+                    loadingDiv.innerHTML = `${escapeHtml(data.answer)}<br><small class="chat-meta">Chat ID: ${data.id} | ${new Date(data.createdAt).toLocaleString()}</small>`;
+
+                    // Chat ID 자동 설정
+                    document.getElementById('chatIdInput').value = data.id;
+                } else {
+                    const error = await response.json();
+                    loadingDiv.classList.remove('loading');
+                    loadingDiv.classList.add('error');
+                    loadingDiv.textContent = `❌ 오류: ${error.message || '응답 실패'}`;
+                }
+            } catch (error) {
+                const loadingDiv = document.getElementById(loadingId);
+                loadingDiv.classList.remove('loading');
+                loadingDiv.classList.add('error');
+                loadingDiv.textContent = `❌ 오류: ${error.message}`;
+            }
+
+            sendBtn.disabled = false;
+            sendBtn.textContent = '전송';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        // 대화 기록 조회
+        async function loadChatHistory() {
+            const resultDiv = document.getElementById('historyResult');
+            resultDiv.innerHTML = '불러오는 중...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/chats?page=0&size=10`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.content && data.content.length > 0) {
+                        let html = '<div class="history-list">';
+                        data.content.forEach(thread => {
+                            html += `<div class="thread-item">
+                                <strong>스레드 #${thread.threadId}</strong>
+                                <span class="thread-date">${new Date(thread.createdAt).toLocaleString()}</span>
+                                <ul>`;
+                            thread.chats.forEach(chat => {
+                                const questionPreview = chat.question.length > 50 ? chat.question.substring(0, 50) + '...' : chat.question;
+                                const answerPreview = chat.answer.length > 100 ? chat.answer.substring(0, 100) + '...' : chat.answer;
+                                html += `<li onclick="document.getElementById('chatIdInput').value='${chat.id}'" style="cursor:pointer">
+                                    <strong>Q:</strong> ${escapeHtml(questionPreview)}<br>
+                                    <strong>A:</strong> ${escapeHtml(answerPreview)}
+                                    <small>(ID: ${chat.id})</small>
+                                </li>`;
+                            });
+                            html += '</ul></div>';
+                        });
+                        html += '</div>';
+                        html += '<p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.85rem;">💡 항목을 클릭하면 Chat ID가 자동 입력됩니다.</p>';
+                        resultDiv.innerHTML = html;
+                    } else {
+                        resultDiv.innerHTML = '<div class="info">대화 기록이 없습니다.</div>';
+                    }
+                } else {
+                    const error = await response.json();
+                    resultDiv.innerHTML = `<div class="error">❌ ${error.message || '조회 실패'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 오류: ${error.message}</div>`;
+            }
+        }
+
+        // 피드백 제출
+        async function submitFeedback(isPositive) {
+            const chatId = document.getElementById('chatIdInput').value;
+            const resultDiv = document.getElementById('feedbackResult');
+
+            if (!chatId) {
+                resultDiv.innerHTML = '<div class="error">Chat ID를 입력해주세요.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/feedbacks`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        chatId: parseInt(chatId),
+                        isPositive: isPositive
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusText = isPositive ? '👍 좋아요' : '👎 별로예요';
+                    resultDiv.innerHTML = `<div class="success">✅ 피드백 등록 완료! (ID: ${data.id}) - ${statusText}</div>`;
+                } else {
+                    const error = await response.json();
+                    resultDiv.innerHTML = `<div class="error">❌ ${error.message || '피드백 실패'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ 오류: ${error.message}</div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+
+</html>
